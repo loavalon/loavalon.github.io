@@ -30,6 +30,40 @@ const ignored_skills =
   ,"Lesser Fiery Eruption"
   ,"Elements of Rage"
   ,"Lightning Strike"
+  ,"Fire Shield"
+  , "Conjure Lightning Attributes"
+  , "Conjure Fire Attributes"
+  ]
+
+const skill_threshold = // milliseconds between duration and minimal cooldown
+  { "Lava Font": 3500
+  , "Meteor Shower": 11000
+  , "Lightning Storm": 11000
+  , "Firestorm": 11000
+  , "Fire Attunement": 1000
+  , "Air Attunement": 1000
+  , "Water Attunement": 1000
+  , "Earth Attunement": 1000
+  , "Lightning Swing": 1000
+  , "Static Swing": 1000
+  , "Thunderclap": 1000
+  , "Primordial Stance": 1000
+  , "Flame Burst": 1000
+  , "Plasma Blast": 3000
+  , "Pyroclastic Blast": 5000
+  , "Fireball": 650
+  , "Stoning": 500
+  , "Flame Wave": 1350
+  , "Conjure Fiery Greatsword": 3000
+  , "Conjure Lightning Hammer": 3000
+  }
+
+const skill_activation_only = // ignore hits not from activation
+  [ "Primordial Stance"
+  , "Air Attunement"
+  , "Fire Attunement"
+  , "Earth Attunement"
+  , "Water Attunement"
   ]
 
 // request
@@ -61,12 +95,20 @@ if (qparam) {
   logrequest.send()
 }
 
+function by_time(a, b) {
+  return a.time - b.time
+}
+
 function main(logbytes) {
   header = parse_header(logbytes)
   agents = parse_agents(logbytes, 16)
   skills = parse_skills(logbytes, agents.next_block)
   events = parse_events(logbytes, skills.next_block)
-  report = process_events(events, skills.skills)
+  const filtered_events = filter_events(events, skills.skills)
+  const no_double_attune = remove_previous_attunement(filtered_events)
+  const adjusted_events = adjust_by_cast_time(no_double_attune)
+  const sorted_events = adjusted_events //.sort(by_time)
+  report = sorted_events
 }
 
 // toolbox
@@ -123,7 +165,7 @@ function parse_agents(logbytes, start) {
 }
 
 function parse_agent(logbytes, start) {
-  // TODO: make fields & field sizes configurable
+  // idea: specify fields & field sizes by prototype object
   var i = start;
   const name_length_guess = 68 // xxd ._.
   const addr = to_int(logbytes, i, i += 8)
@@ -230,8 +272,9 @@ function parse_event(bytes) {
 
 // processing
 
-function process_events(events, skills) {
+function filter_events(events, skills) {
   const result = []
+  const last_hit_by_name = {}
   var last_time = null
   var last_skill = null
   for (var i in events) {
@@ -242,8 +285,8 @@ function process_events(events, skills) {
       !skill_name ||
       skill_name.length <= 0 ||
       ignored_skills.indexOf(skill_name) >= 0 ||
-      skill_name === "Primordial Stance" && e.is_activation === 0 ||
-      skill_name === last_skill && e.time === last_time
+      skill_activation_only.indexOf(skill_name) >= 0 && e.is_activation === 0 ||
+      is_repeated_hit(skill_name, e.time, last_hit_by_name)
 
     last_time = e.time
     last_skill = skill_name
@@ -254,8 +297,6 @@ function process_events(events, skills) {
     result.push({
       time: e.time,
       skill: skill_name,
-      activation: e.is_activation,
-      result: e.result,
     })
   }
   if (result.length <= 0)
@@ -264,4 +305,31 @@ function process_events(events, skills) {
   for (var i in result)
     result[i].time -= start_time
   return result
+}
+
+function is_repeated_hit(skill_name, time, last_hit_by_name) {
+  const last_hit = last_hit_by_name[skill_name]
+  const threshold = skill_threshold[skill_name]
+  const is_repeated = last_hit && threshold && threshold > time - last_hit
+  if (!is_repeated)
+    last_hit_by_name[skill_name] = time
+  return is_repeated
+}
+
+function remove_previous_attunement(events) {
+  const result = []
+  for (var i = 0; i < events.length; ++i) {
+    const is_previous_attunement =
+      events[i].skill.endsWith('Attunement') &&
+      i + 1 < events.length &&
+      events[i + 1].skill.endsWith('Attunement')
+
+    if (!is_previous_attunement)
+      result.push(events[i])
+  }
+  return result
+}
+
+function adjust_by_cast_time(events) {
+  return events
 }
