@@ -1,11 +1,48 @@
 <html>
 <head>
-  <script src="scripts/jquery-3.2.1.min.js"></script>
-  <script src="parser.js"></script>
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="parser.js"></script>
+
+<script type='text/javascript'>
+logrequest.onload = function (x) {
+  onload()
+  set_table()
+}
+load_log()
+
+function set_table() {
+  const props = ['time', 'skill', 'agent', 'hit_time']
+  var tbody = $('#skillz tbody')
+  for (var i in report) {
+    var tr = $('<tr>')
+    for (var j in props)
+      $('<td class="c' + j + '">').html(report[i][props[j]]).appendTo(tr)
+    tbody.append(tr)
+  }
+}
+
+</script>
 </head>
 <body>
-<a href="Anime-Club.html">
-link to dummy page
-</a>
+
+<style type="text/css">
+th{text-align:left}
+th,td{padding:0 1ex 0 1ex}
+td.c0,td.c3{text-align:right}
+</style>
+
+<table id="skillz">
+<thead>
+<tr>
+<th>Estimated Activation Time</th>
+<th>Skill</th>
+<th>Agent</th>
+<th>Hit Time</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+
 </body>
 </html>

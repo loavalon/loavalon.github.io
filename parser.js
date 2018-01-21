@@ -59,22 +59,44 @@ const ignored_skills =
   ,"Confusion"
   ,"Torment"
   ,"Slow"
+  ,"Regeneration"
+  ,"Signet of Fire"
+  ,"29880"
+  ,"33002"
   ,"38134"
+  ,"40263"
   ,"40926"
   ,"41692"
   ,"42756"
+  ,"42264"
   ,"42811"
   ,"43229"
   ,"43470"
   ,"43740"
   ,"44822"
+  ,"44857"
   ,"45162"
+  ,"45683"
+  ,"Sun Spirit"
+  ,"Spirit of Frost"
+  ,"Unstable Bauble Refraction: Red"
+  ,"Spotter"
+  ,"Empower Allies"
+  ,"Banner of Strength"
+  ,"Banner of Discipline"
+  ,"Alacrity"
+  ,"Quickness"
   ,"Lesser Fiery Eruption"
   ,"Elements of Rage"
   ,"Lightning Strike"
   ,"Fire Shield"
   ,"Conjure Lightning Attributes"
   ,"Conjure Fire Attributes"
+  ,"Woven Fire"
+  ,"Woven Water"
+  ,"Woven Air"
+  ,"Woven Earth"
+  ,"Weave Self"
   // these autos mess timestamps up
   ,"Fireball"
   ,"Stoning"
@@ -110,13 +132,14 @@ var report
 
 // execution
 
-logrequest.onload = function (logevent) {
+function onload(logevent) {
   logbytes = new Uint8Array(logrequest.response)
   main(logbytes)
 }
 
-if (qparam) {
-  logrequest.send()
+function load_log() {
+  if (qparam)
+    logrequest.send()
 }
 
 function main(logbytes) {
