@@ -6,17 +6,17 @@
 <script type='text/javascript'>
 logrequest.onload = function (x) {
   onload()
-  set_table()
+  set_table(report)
 }
 load_log()
 
-function set_table() {
-  const props = ['time', 'skill', 'agent', 'hit_time']
+function set_table(events) {
+  const props = ['time', 'skill', 'agent', 'target', 'hit_time']
   var tbody = $('#skillz tbody')
-  for (var i in report) {
+  for (var i in events) {
     var tr = $('<tr>')
     for (var j in props)
-      $('<td class="c' + j + '">').html(report[i][props[j]]).appendTo(tr)
+      $('<td class="c' + j + '">').html(events[i][props[j]]).appendTo(tr)
     tbody.append(tr)
   }
 }
@@ -37,6 +37,7 @@ td.c0,td.c3{text-align:right}
 <th>Estimated Activation Time</th>
 <th>Skill</th>
 <th>Agent</th>
+<th>Target</th>
 <th>Hit Time</th>
 </tr>
 </thead>

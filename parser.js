@@ -346,6 +346,7 @@ function filter_events(events, skills) {
       time: e.time,
       skill: skill_name,
       agent: e.src_agent,
+      target: e.dst_agent,
     })
   }
   return result
@@ -422,6 +423,7 @@ function index_agents(agents) {
 function name_agents(events, agent_by_addr) {
   for (var i in events) {
     events[i].agent = agent_by_addr[events[i].agent]
+    events[i].target = agent_by_addr[events[i].target]
   }
   return events
 }
