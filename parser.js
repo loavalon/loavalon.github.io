@@ -1,21 +1,6 @@
 // data
 // so much guesswork T.T
 
-const skill_delay = // milliseconds between cast and hit
-  { "Lava Font": 0
-  , "Pyroclastic Blast": 1000
-  , "Eruption": 200
-  , "Primordial Stance": 1300
-  , "Lightning Storm": 800
-  , "Fireball": 0
-  , "Stoning": 0
-  , "Lightning Swing": 750
-  , "Static Swing": 1000
-  , "Thunderclap": 1500
-  , "Flame Burst": 500
-  , "Firestorm": 1000
-  }
-
 const skill_threshold = // milliseconds between duration and minimal cooldown
   { "Lava Font": 4400
   , "Meteor Shower": 11000
@@ -41,11 +26,16 @@ const skill_threshold = // milliseconds between duration and minimal cooldown
   , "Lightning Surge": 3000
   , "Fiery Rush": 5000
   , "Eruption": 5000
+  , "Weave Self": 40000
   }
 
 const expected_evtc_version = "EVTC20180109"
 const ignored_skills =
   ["0"
+  ,"Rifle Turret"
+  ,"Magnetic Shield"
+  ,"Absorb"
+  ,"Dodge"
   ,"Protection"
   ,"Swiftness"
   ,"Blinded"
@@ -61,8 +51,11 @@ const ignored_skills =
   ,"Slow"
   ,"Regeneration"
   ,"Signet of Fire"
+  ,"5705"
+  ,"12652"
   ,"29880"
   ,"33002"
+  ,"34093"
   ,"38134"
   ,"40263"
   ,"40926"
@@ -96,7 +89,7 @@ const ignored_skills =
   ,"Woven Water"
   ,"Woven Air"
   ,"Woven Earth"
-  ,"Weave Self"
+  //,"Weave Self"
   // these autos mess timestamps up
   ,"Fireball"
   ,"Stoning"
@@ -116,6 +109,7 @@ const skill_activation_only = // ignore hits not from activation
 
 const pageurl = new URL(window.location.href)
 const qparam = pageurl.searchParams.get('q')
+const pparam = pageurl.searchParams.get('p')
 const logurl = 'logs/' + qparam
 const logrequest = new XMLHttpRequest()
 logrequest.open('GET', logurl, true)
@@ -149,7 +143,7 @@ function main(logbytes) {
   events = parse_events(logbytes, skills.next_block)
   const filtered_events = filter_events(events, skills.skills)
   const no_double_attune = remove_previous_attunement(filtered_events)
-  const adjusted_events = adjust_by_cast_time(no_double_attune)
+  const adjusted_events = no_double_attune
   const sorted_events = sort_by_time(adjusted_events)
   const relativized_events = relativize_time(sorted_events)
   const agent_by_addr = index_agents(agents.agents)
@@ -375,40 +369,32 @@ function remove_previous_attunement(events) {
   return result
 }
 
-function adjust_by_cast_time(events) {
-  var first_eruption = true
-  var first_lavafont = true
-  for (var i in events) {
-    var delay = skill_delay[events[i].skill] || 0
-    if (first_eruption && events[i].skill === 'Eruption') {
-      delay += 4000
-      first_eruption = false
-    }
-    if (first_lavafont && events[i].skill === 'Lava Font') {
-      delay += 1000
-      first_lavafont = false
-    }
-    events[i].hit_time = events[i].time
-    events[i].time = events[i].time - delay
-  }
-  return events
+function filter_by_pattern(events, pparam) {
+  if (pparam) {
+    const regex = new RegExp(pparam, 'i')
+    return events.filter(function (e) {
+      return regex.test(e.skill)
+    })
+  } else
+    return events
 }
 
 function sort_by_time(events) {
-  return events.sort(function(e1, e2) {
-    return e1.time - e2.time
-  })
+  return events
 }
 
 function relativize_time(events) {
   if (events.length <= 0)
     return events
+  const result = []
   const start_time = events[0].time
   for (var i in events) {
-    events[i].time -= start_time
-    events[i].hit_time -= start_time
+    const e = $.extend(true, {}, events[i])
+    e.time -= start_time
+    e.hit_time -= start_time
+    result.push(e)
   }
-  return events
+  return result
 }
 
 function index_agents(agents) {
